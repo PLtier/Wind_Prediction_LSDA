@@ -1,0 +1,1 @@
+curl http://YOUR.IP.ADDRESS.HERE:5000/invocations -H 'Content-Type: application/json' -d @input_example_mlflow_2.0.0.json

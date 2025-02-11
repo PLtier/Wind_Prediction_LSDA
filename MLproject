@@ -1,0 +1,12 @@
+name: Assignment
+
+python_env: python_env.yaml
+# or
+# conda_env: my_env.yaml
+# or
+# docker_env:
+#    image:  mlflow-docker-example
+
+entry_points:
+  main:
+    command: "python Assignment_1_Template_MLFlow_Project.py"

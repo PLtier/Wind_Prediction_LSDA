@@ -1,0 +1,6 @@
+# Dependencies required to build packages. This field is optional.
+python: "3.11.7"
+build_dependencies:
+  - pip
+dependencies:
+  - -r requirements.txt
