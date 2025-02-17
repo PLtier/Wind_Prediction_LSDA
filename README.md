@@ -1,80 +1,62 @@
-# Wind Power Forecasting Project
+# wind_power
 
-This project helps you build and evaluate machine learning models to forecast wind power generation in Orkney using weather data. It includes data pipeline setup, model training, and experiment tracking using MLFlow.
+<a target="_blank" href="https://cookiecutter-data-science.drivendata.org/">
+    <img src="https://img.shields.io/badge/CCDS-Project%20template-328F97?logo=cookiecutter" />
+</a>
 
-## Project Structure
+Wind Power Estimation
 
-- `Assignment_1_Template_MLFlow_Project.py`: Main script for MLFlow project execution. You should edit this file for submission.
-- `Assignment_1-Template.ipynb`: Jupyter notebook with detailed code explanations. Just to play around, idally not intended for submission, as it is not compatible with MLFlow projects.
-- `python_env.yaml`: Python environment configuration
-- `requirements.txt`: Project dependencies
-- `MLproject`: MLFlow project configuration
+## Project Organization
 
-## Setup
+```
+├── LICENSE            <- Open-source license if one is chosen
+├── Makefile           <- Makefile with convenience commands like `make data` or `make train`
+├── README.md          <- The top-level README for developers using this project.
+├── data
+│   ├── external       <- Data from third party sources.
+│   ├── interim        <- Intermediate data that has been transformed.
+│   ├── processed      <- The final, canonical data sets for modeling.
+│   └── raw            <- The original, immutable data dump.
+│
+├── docs               <- A default mkdocs project; see mkdocs.org for details
+│
+├── models             <- Trained and serialized models, model predictions, or model summaries
+│
+├── notebooks          <- Jupyter notebooks. Naming convention is a number (for ordering),
+│                         the creator's initials, and a short `-` delimited description, e.g.
+│                         `1.0-jqp-initial-data-exploration`.
+│
+├── pyproject.toml     <- Project configuration file with package metadata for wind_power
+│                         and configuration for tools like black
+│
+├── references         <- Data dictionaries, manuals, and all other explanatory materials.
+│
+├── reports            <- Generated analysis as HTML, PDF, LaTeX, etc.
+│   └── figures        <- Generated graphics and figures to be used in reporting
+│
+├── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
+│                         generated with `pip freeze > requirements.txt`
+│
+├── setup.cfg          <- Configuration file for flake8
+│
+└── wind_power                <- Source code for use in this project.
+    │
+    ├── __init__.py    <- Makes wind_power a Python module
+    │
+    ├── data           <- Scripts to download or generate data
+    │   └── make_dataset.py
+    │
+    ├── features       <- Scripts to turn raw data into features for modeling
+    │   └── build_features.py
+    │
+    ├── models         <- Scripts to train models and then use trained models to make
+    │   │                 predictions
+    │   ├── predict_model.py
+    │   └── train_model.py
+    │
+    └── visualization  <- Scripts to create exploratory and results oriented visualizations
+        └── visualize.py
+```
 
-1. Create a virtual environment:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
+--------
 
-2. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-## Project Overview
-
-This project demonstrates how to:
-
-1. Connect to InfluxDB to retrieve wind and power generation data
-2. Process and analyze time series data using pandas
-3. Build ML pipelines with scikit-learn
-4. Track experiments using MLFlow
-5. Deploy models for production use
-
-## Data Sources
-
-The project uses two main data sources from InfluxDB:
-- Wind forecast data (speed and direction)
-- Power generation data from Orkney
-
-## Model Training
-
-The project includes:
-- Time series cross-validation
-- Feature engineering pipeline
-- Model evaluation metrics (MAE, MSE, R²)
-- Experiment tracking with MLFlow
-
-## MLFlow Integration
-
-MLFlow is used for:
-- Experiment tracking
-- Model versioning
-- Parameter logging
-- Metric visualization
-- Model deployment
-
-## Usage
-
-1. Start the MLFlow server:
-   ```bash
-   mlflow server
-   ```
-
-2. Run the main script:
-   ```bash
-   python Assignment_1_Template_MLFlow_Project.py
-   ```
-
-3. View experiments at http://localhost:5000
-
-## Requirements
-
-See `requirements.txt` for full list of dependencies. Key requirements:
-- Python 3.11+
-- MLFlow
-- scikit-learn
-- pandas
-- InfluxDB client
