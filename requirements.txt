@@ -12,8 +12,5 @@ virtualenv==20.27.1
 pip
 python-dotenv
 tqdm
-flake8
-black
-isort
 -e .
 
