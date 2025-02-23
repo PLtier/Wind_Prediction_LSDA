@@ -1,0 +1,13 @@
+name: lsda
+channels:
+  - conda-forge
+dependencies:
+  - matplotlib
+  - mlflow
+  - numpy
+  - pandas
+  - python[version='>=3.11,<3.12']
+  - scikit-learn
+  - seaborn
+  - influxdb
+  - jupyter
