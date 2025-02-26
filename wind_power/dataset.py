@@ -1,29 +1,57 @@
-from pathlib import Path
-
-import typer
-from loguru import logger
-from tqdm import tqdm
-
-from wind_power.config import PROCESSED_DATA_DIR, RAW_DATA_DIR
-
-app = typer.Typer()
+from influxdb import InfluxDBClient
+import pandas as pd
+from datetime import datetime
 
 
-@app.command()
-def main(
-    # ---- REPLACE DEFAULT PATHS AS APPROPRIATE ----
-    input_path: Path = RAW_DATA_DIR / "dataset.csv",
-    output_path: Path = PROCESSED_DATA_DIR / "dataset.csv",
-    # ----------------------------------------------
-):
-    # ---- REPLACE THIS WITH YOUR OWN CODE ----
-    logger.info("Processing dataset...")
-    for i in tqdm(range(10), total=10):
-        if i == 5:
-            logger.info("Something happened for iteration 5.")
-    logger.success("Processing dataset complete.")
-    # -----------------------------------------
+settings = {
+    "host": "influxus.itu.dk",
+    "port": 8086,
+    "username": "lsda",
+    "password": "icanonlyread",
+}
 
 
-if __name__ == "__main__":
-    app()
+class InfluxDBClientWrapper:
+    def __init__(self):
+        self.client = InfluxDBClient(
+            host=settings["host"],
+            port=settings["port"],
+            username=settings["username"],
+            password=settings["password"],
+        )
+        self.client.switch_database("orkney")
+
+    def query(self, query):
+        return self.client.query(query)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.client.close()
+
+
+def set_to_dataframe(resulting_set):
+    values = resulting_set.raw["series"][0]["values"]
+    columns = resulting_set.raw["series"][0]["columns"]
+    df = pd.DataFrame(values, columns=columns).set_index("time")
+    df.index = pd.to_datetime(df.index)  # Convert to datetime-index
+
+    return df
+
+
+def get_power_and_wind_data(client, days):
+    power_set = client.query(
+        "SELECT * FROM Generation where time > now()-" + str(days) + "d"
+    )
+    wind_set = client.query(
+        "SELECT * FROM MetForecasts where time > now()-"
+        + str(days)
+        + "d and time <= now() and Lead_hours = '1'"
+    )
+    today = datetime.now()
+    return power_set, wind_set, today
+
+
+# with InfluxDBClientWrapper(settings) as client_wrapper:
+#     power_set, wind_set, today = get_power_and_wind_data(client_wrapper, 90)
