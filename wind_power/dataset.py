@@ -40,7 +40,7 @@ def set_to_dataframe(resulting_set):
     return df
 
 
-def get_power_and_wind_data(client, days):
+def get_power_and_wind_data(client, days) -> list[pd.DataFrame, pd.DataFrame, datetime]:
     power_set = client.query(
         "SELECT * FROM Generation where time > now()-" + str(days) + "d"
     )
@@ -50,7 +50,17 @@ def get_power_and_wind_data(client, days):
         + "d and time <= now() and Lead_hours = '1'"
     )
     today = datetime.now()
-    return power_set, wind_set, today
+    return set_to_dataframe(power_set), set_to_dataframe(wind_set), today
+
+
+def merge_dataframes(power_df, wind_df) -> pd.DataFrame:
+    """Performs inner join"""
+    return pd.merge(power_df, wind_df, how="inner", on="time")
+
+
+def handle_missing_values(df) -> pd.DataFrame:
+    """Currently we drop all rows with missing values"""
+    return df.dropna()
 
 
 # with InfluxDBClientWrapper(settings) as client_wrapper:
