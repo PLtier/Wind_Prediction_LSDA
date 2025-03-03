@@ -1,4 +1,5 @@
 from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import PolynomialFeatures
 
 import pandas as pd
 import numpy as np
@@ -8,6 +9,8 @@ import numpy as np
 
 from sklearn.preprocessing import FunctionTransformer, OneHotEncoder
 
+# Wind as a vector
+# =====================
 conversion = {
     "N": 0,
     "NNE": 22.5,
@@ -40,7 +43,6 @@ def wind_direction_symbol_to_vector(df: pd.DataFrame) -> pd.DataFrame:
 wind_direction_transformer_symbol_to_vector_ft = FunctionTransformer(
     wind_direction_symbol_to_vector, validate=False
 )
-wind_direction_transformer_symbol_to_vector_ft.set_output(transform="pandas")
 
 wind_direction_symbol_to_vector_ct = ColumnTransformer(
     transformers=[
@@ -54,14 +56,23 @@ wind_direction_symbol_to_vector_ct = ColumnTransformer(
     verbose_feature_names_out=False,
 )
 wind_direction_symbol_to_vector_ct.set_output(transform="pandas")
+# =====================
 
-encoder = OneHotEncoder(sparse_output=False, categories=categories)
+# Wind as one-hot
+# =====================
 
-wind_direction_symbol_to_onehot = ColumnTransformer(
+
+def onehot_encoder_ft(df: pd.DataFrame) -> pd.DataFrame:
+    return pd.get_dummies(df, columns=["Direction"])
+
+
+onehot_encoder = OneHotEncoder(sparse_output=False, categories=categories)
+
+wind_direction_symbol_to_onehot_ct = ColumnTransformer(
     transformers=(
         [
             "encoder",
-            wind_direction_transformer_symbol_to_vector_ft,
+            onehot_encoder,
             ["Direction"],
         ]
     ),
@@ -69,7 +80,12 @@ wind_direction_symbol_to_onehot = ColumnTransformer(
     verbose_feature_names_out=False,
     sparse_threshold=0,
 )
-wind_direction_symbol_to_onehot.set_output(transform="pandas")
+# wind_direction_symbol_to_onehot_ct.set_output(transform="pandas")
+# =====================
+
+
+# Polynomial features of speed <<only>>, no interactions
+# ===========================
 
 
 # transformed_wind_df = column_transformer.fit_transform(wind_df)

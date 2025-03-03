@@ -1,1 +1,1 @@
-import config  # noqa: F401
+from wind_power import config  # noqa: F401
