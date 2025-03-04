@@ -13,10 +13,15 @@ authors = [
 readme = "README.md"
 classifiers = [
     "Programming Language :: Python :: 3",
-    
 ]
 requires-python = "~=3.11.7"
 
 [tool.ruff.lint.isort]
 known-first-party = ["wind_power"]
 force-sort-within-sections = true
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]
+ignore = []
+fixable=["ALL"]
+

@@ -1,29 +1,91 @@
-from pathlib import Path
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import PolynomialFeatures
 
-import typer
-from loguru import logger
-from tqdm import tqdm
+import pandas as pd
+import numpy as np
+# convert wind directions to radians. Now it's categorical like E, W, N, S, ENE, ESE etc.
+# so we need to convert them to degrees to be able to plot them on a circle.
+# we can use the following mapping:
 
-from wind_power.config import PROCESSED_DATA_DIR
+from sklearn.preprocessing import FunctionTransformer, OneHotEncoder
 
-app = typer.Typer()
+# Wind as a vector
+# =====================
+conversion = {
+    "N": 0,
+    "NNE": 22.5,
+    "NE": 45,
+    "ENE": 67.5,
+    "E": 90,
+    "ESE": 112.5,
+    "SE": 135,
+    "SSE": 157.5,
+    "S": 180,
+    "SSW": 202.5,
+    "SW": 225,
+    "WSW": 247.5,
+    "W": 270,
+    "WNW": 292.5,
+    "NW": 315,
+    "NNW": 337.5,
+}
+categories = list(conversion.keys())
 
 
-@app.command()
-def main(
-    # ---- REPLACE DEFAULT PATHS AS APPROPRIATE ----
-    input_path: Path = PROCESSED_DATA_DIR / "dataset.csv",
-    output_path: Path = PROCESSED_DATA_DIR / "features.csv",
-    # -----------------------------------------
-):
-    # ---- REPLACE THIS WITH YOUR OWN CODE ----
-    logger.info("Generating features from dataset...")
-    for i in tqdm(range(10), total=10):
-        if i == 5:
-            logger.info("Something happened for iteration 5.")
-    logger.success("Features generation complete.")
-    # -----------------------------------------
+def wind_direction_symbol_to_vector(df: pd.DataFrame) -> pd.DataFrame:
+    df["Wx"] = df["Direction"].apply(lambda x: np.cos(conversion[x] * np.pi / 180))
+    df["Wy"] = df["Direction"].apply(lambda x: np.sin(conversion[x] * np.pi / 180))
+    df["Wx"] = df["Wx"].apply(lambda x: 0 if abs(x) < 1e-10 else x)
+    df["Wy"] = df["Wy"].apply(lambda x: 0 if abs(x) < 1e-10 else x)
+    return df
 
 
-if __name__ == "__main__":
-    app()
+wind_direction_transformer_symbol_to_vector_ft = FunctionTransformer(
+    wind_direction_symbol_to_vector, validate=False
+)
+
+wind_direction_symbol_to_vector_ct = ColumnTransformer(
+    transformers=[
+        (
+            "wind_direction",
+            wind_direction_transformer_symbol_to_vector_ft,
+            ["Direction"],
+        )
+    ],
+    remainder="passthrough",
+    verbose_feature_names_out=False,
+)
+wind_direction_symbol_to_vector_ct.set_output(transform="pandas")
+# =====================
+
+# Wind as one-hot
+# =====================
+
+
+def onehot_encoder_ft(df: pd.DataFrame) -> pd.DataFrame:
+    return pd.get_dummies(df, columns=["Direction"])
+
+
+onehot_encoder = OneHotEncoder(sparse_output=False, categories=categories)
+
+wind_direction_symbol_to_onehot_ct = ColumnTransformer(
+    transformers=(
+        [
+            "encoder",
+            onehot_encoder,
+            ["Direction"],
+        ]
+    ),
+    remainder="passthrough",
+    verbose_feature_names_out=False,
+    sparse_threshold=0,
+)
+# wind_direction_symbol_to_onehot_ct.set_output(transform="pandas")
+# =====================
+
+
+# Polynomial features of speed <<only>>, no interactions
+# ===========================
+
+
+# transformed_wind_df = column_transformer.fit_transform(wind_df)
