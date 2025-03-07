@@ -10,6 +10,6 @@ ipykernel
 python-dotenv
 tqdm
 u8darts
-
+virtualenv
 -e .
 
