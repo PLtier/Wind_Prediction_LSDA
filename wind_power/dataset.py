@@ -1,6 +1,6 @@
 from influxdb import InfluxDBClient
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 settings = {
@@ -35,22 +35,40 @@ def set_to_dataframe(resulting_set):
     values = resulting_set.raw["series"][0]["values"]
     columns = resulting_set.raw["series"][0]["columns"]
     df = pd.DataFrame(values, columns=columns).set_index("time")
-    df.index = pd.to_datetime(df.index)  # Convert to datetime-index
+    # 2024-06-05 15:00:00
+    df.index = pd.to_datetime(df.index, format="%Y-%m-%dT%H:%M:%SZ")
 
     return df
 
 
-def get_power_and_wind_data(client, days) -> list[pd.DataFrame, pd.DataFrame, datetime]:
-    power_set = client.query(
-        "SELECT * FROM Generation where time > now()-" + str(days) + "d"
+def get_power_and_wind_data(
+    client: InfluxDBClient, days: int, date: str
+) -> list[pd.DataFrame, pd.DataFrame, datetime]:
+    # Parse the reference date from the ISO string.
+    ref_date = datetime.fromisoformat(date)
+
+    # Calculate the lower bound by subtracting the desired number of days.
+    lower_bound = ref_date - timedelta(days=days)
+
+    # Convert both dates to RFC3339 format (e.g., "2023-05-01T00:00:00Z").
+    lower_bound_str = lower_bound.strftime("%Y-%m-%dT%H:%M:%SZ")
+    ref_date_str = ref_date.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    # Build queries using the computed dates.
+    power_query = (
+        f"SELECT * FROM Generation WHERE time > '{lower_bound_str}' "
+        f"AND time <= '{ref_date_str}'"
     )
-    wind_set = client.query(
-        "SELECT * FROM MetForecasts where time > now()-"
-        + str(days)
-        + "d and time <= now() and Lead_hours = '1'"
+    wind_query = (
+        f"SELECT * FROM MetForecasts WHERE time > '{lower_bound_str}' "
+        f"AND time <= '{ref_date_str}' AND Lead_hours = '1'"
     )
-    today = datetime.now()
-    return set_to_dataframe(power_set), set_to_dataframe(wind_set), today
+
+    # Execute the queries.
+    power_set = client.query(power_query)
+    wind_set = client.query(wind_query)
+
+    return set_to_dataframe(power_set), set_to_dataframe(wind_set), ref_date
 
 
 def merge_dataframes(power_df, wind_df) -> pd.DataFrame:
