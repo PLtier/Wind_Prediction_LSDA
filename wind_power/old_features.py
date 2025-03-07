@@ -5,6 +5,34 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, PolynomialFeatures, FunctionTransformer
 
 
+# --- Custom transformer to compute interactions between two groups of features ---
+def compute_interactions(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Expects a DataFrame with columns from two groups:
+      - The 'direction' group (columns starting with "direction__")
+      - The 'speed_poly' group (columns starting with "speed_poly__")
+    Computes all pairwise products between one column from each group
+    and appends them as new columns.
+    """
+    df = df.copy()
+    # Identify the columns from the two groups by their prefixes
+    direction_cols = [col for col in df.columns if col.startswith("direction__")]
+    speed_cols = [col for col in df.columns if col.startswith("speed_poly__")]
+
+    # Compute cross interactions: product of each direction column with each speed column
+    interactions = {}
+    for d in direction_cols:
+        for s in speed_cols:
+            interactions[f"{d}_X_{s}"] = df[d] * df[s]
+    interactions_df = pd.DataFrame(interactions, index=df.index)
+
+    # Append the new interaction features to the original DataFrame
+    return pd.concat([df, interactions_df], axis=1)
+
+
+interaction_transformer = FunctionTransformer(compute_interactions, validate=False)
+# ===============
+
 # Onehot
 onehot_direction_encoder = OneHotEncoder(sparse_output=False, dtype=int)
 # =======
@@ -45,23 +73,33 @@ vector_direction_encoder = FunctionTransformer(direction_to_vector, validate=Fal
 
 
 # pipeline
-def DirectionEncodingTransformer(direction_encoding: str):
+def FeatureEngineeringPipeline(
+    direction_encoding: str, degree: int, incl_interaction: bool
+):
     """Prepares features for training :)"""
     direction_encoder: str | FunctionTransformer | OneHotEncoder
     if direction_encoding == "drop":
         direction_encoder = "drop"
+        incl_interaction = False
     elif direction_encoding == "vector":
         direction_encoder = vector_direction_encoder
     elif direction_encoding == "onehot":
         direction_encoder = onehot_direction_encoder
+
     preprocessor = ColumnTransformer(
         transformers=[
+            ("drop_meaningless_vars", "drop", ["Lead_hours", "Source_time"]),
             # Encode 'Direction' (the output will have names like "direction__<value>")
             ("direction", direction_encoder, ["Direction"]),  # type: ignore
             # Compute polynomial features on 'Speed' (e.g. degree 3, without bias)
+            (
+                "speed_poly",
+                PolynomialFeatures(degree=degree, include_bias=False),
+                ["Speed"],
+            ),
         ],
         remainder="passthrough",  # leave remaining columns
-        verbose_feature_names_out=False,  # this will prefix the output column names
+        verbose_feature_names_out=True,  # this will prefix the output column names
         # n_jobs=-1, //TODO: have a look on that one day :)
     )
     preprocessor.set_output(transform="pandas")  # have the output as a DataFrame
@@ -69,31 +107,21 @@ def DirectionEncodingTransformer(direction_encoding: str):
     # --- Assemble the full pipeline ---
     # Step 1: Apply the preprocessor.
     # Step 2: Compute interactions between the 'direction' and 'speed_poly' features.
-    return preprocessor
+
+    steps = [("preprocessor", preprocessor)]
+    if incl_interaction:
+        steps.append(("interactions", interaction_transformer))  # type: ignore
+    steps += [
+        ("bias", FunctionTransformer(lambda df: df.assign(bias=1), validate=False)),  # type: ignore
+    ]
+
+    pipeline = Pipeline(steps)
+    return pipeline
 
 
 # ==========
 
 
-def robust_timeseries_imputer(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Impute missing values in a time series DataFrame using time-based interpolation.
-    Assumes the DataFrame has a DatetimeIndex.
-    """
-    full_index = pd.date_range(start=df.index.min(), end=df.index.max(), freq="3h")
-
-    # Reindex your DataFrame to the complete date range.
-    df = df.reindex(full_index)
-    # Check that the DataFrame has a DatetimeIndex
-    if not isinstance(df.index, pd.DatetimeIndex):
-        raise ValueError(
-            "DataFrame must have a DatetimeIndex for time-based interpolation."
-        )
-
-    # Interpolate using the time index (linear interpolation by default)
+#
+def timeseries_imputer(df: pd.DataFrame) -> pd.DataFrame:
     df_imputed = df.interpolate(method="time")
-
-    # In case there are still NaNs at the beginning or end, fill them using forward/backward fill.
-    df_imputed = df_imputed.fillna(method="ffill").fillna(method="bfill")  # type: ignore
-
-    return df_imputed
