@@ -1,0 +1,7 @@
+name: mlflow-example
+
+python_env: python_env.yaml
+
+entry_points:
+  main:
+    command: "python ./wind_power/run_locally.py"
