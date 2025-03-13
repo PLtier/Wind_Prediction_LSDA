@@ -69,17 +69,3 @@ def get_power_and_wind_data(
     wind_set = client.query(wind_query)
 
     return set_to_dataframe(power_set), set_to_dataframe(wind_set), ref_date
-
-
-def merge_dataframes(power_df, wind_df) -> pd.DataFrame:
-    """Performs inner join"""
-    return pd.merge(power_df, wind_df, how="inner", on="time")
-
-
-def handle_missing_values(df) -> pd.DataFrame:
-    """Currently we drop all rows with missing values"""
-    return df.dropna()
-
-
-# with InfluxDBClientWrapper(settings) as client_wrapper:
-#     power_set, wind_set, today = get_power_and_wind_data(client_wrapper, 90)

@@ -1,8 +1,6 @@
 import numpy as np
 import pandas as pd
-from sklearn.compose import ColumnTransformer
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder, PolynomialFeatures, FunctionTransformer
+from sklearn.preprocessing import OneHotEncoder, FunctionTransformer
 
 
 # Onehot
@@ -44,37 +42,6 @@ vector_direction_encoder = FunctionTransformer(direction_to_vector, validate=Fal
 # ============
 
 
-# pipeline
-def DirectionEncodingTransformer(direction_encoding: str):
-    """Prepares features for training :)"""
-    direction_encoder: str | FunctionTransformer | OneHotEncoder
-    if direction_encoding == "drop":
-        direction_encoder = "drop"
-    elif direction_encoding == "vector":
-        direction_encoder = vector_direction_encoder
-    elif direction_encoding == "onehot":
-        direction_encoder = onehot_direction_encoder
-    preprocessor = ColumnTransformer(
-        transformers=[
-            # Encode 'Direction' (the output will have names like "direction__<value>")
-            ("direction", direction_encoder, ["Direction"]),  # type: ignore
-            # Compute polynomial features on 'Speed' (e.g. degree 3, without bias)
-        ],
-        remainder="passthrough",  # leave remaining columns
-        verbose_feature_names_out=False,  # this will prefix the output column names
-        # n_jobs=-1, //TODO: have a look on that one day :)
-    )
-    preprocessor.set_output(transform="pandas")  # have the output as a DataFrame
-
-    # --- Assemble the full pipeline ---
-    # Step 1: Apply the preprocessor.
-    # Step 2: Compute interactions between the 'direction' and 'speed_poly' features.
-    return preprocessor
-
-
-# ==========
-
-
 def robust_timeseries_imputer(df: pd.DataFrame) -> pd.DataFrame:
     """
     Impute missing values in a time series DataFrame using time-based interpolation.
@@ -82,18 +49,26 @@ def robust_timeseries_imputer(df: pd.DataFrame) -> pd.DataFrame:
     """
     full_index = pd.date_range(start=df.index.min(), end=df.index.max(), freq="3h")
 
-    # Reindex your DataFrame to the complete date range.
     df = df.reindex(full_index)
-    # Check that the DataFrame has a DatetimeIndex
     if not isinstance(df.index, pd.DatetimeIndex):
         raise ValueError(
             "DataFrame must have a DatetimeIndex for time-based interpolation."
         )
 
-    # Interpolate using the time index (linear interpolation by default)
     df_imputed = df.interpolate(method="time")
 
-    # In case there are still NaNs at the beginning or end, fill them using forward/backward fill.
     df_imputed = df_imputed.fillna(method="ffill").fillna(method="bfill")  # type: ignore
 
     return df_imputed
+
+
+robust_timeseries_imputer_ft = FunctionTransformer(
+    robust_timeseries_imputer, validate=False
+)
+
+
+def ensure_non_negative(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Ensure every value in the DataFrame is above or equal to 0.
+    """
+    return df.clip(lower=0)
