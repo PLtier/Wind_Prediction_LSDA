@@ -1,5 +1,5 @@
 # Power Generation From Wind
-Please see the [Report](./reports/macja-A1-report.pdf)
+Please see the [Report](./reports/macja-A1-report.pdf) and associated [MLFlow dashboard](https://dagshub.com/PLtier/a1_lsda2025/experiments)
 
 <a target="_blank" href="https://cookiecutter-data-science.drivendata.org/">
     <img src="https://img.shields.io/badge/CCDS-Project%20template-328F97?logo=cookiecutter" />
