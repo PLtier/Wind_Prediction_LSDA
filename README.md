@@ -1,4 +1,5 @@
-# wind_power
+# Power Generation From Wind
+Please see the [Report](./reports/macja-A1-report.pdf)
 
 <a target="_blank" href="https://cookiecutter-data-science.drivendata.org/">
     <img src="https://img.shields.io/badge/CCDS-Project%20template-328F97?logo=cookiecutter" />
